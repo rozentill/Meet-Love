@@ -50,6 +50,7 @@ public class InteractVideoActivity extends Activity{
         mySurfaceHolder.setFormat(PixelFormat.TRANSLUCENT);//translucent半透明 transparent透明
         mySurfaceHolder.addCallback(new myCallBack(Camera.CameraInfo.CAMERA_FACING_FRONT));
         mySurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        surface.setZOrderOnTop(true);
 
         video.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.default_video));
         video.start();

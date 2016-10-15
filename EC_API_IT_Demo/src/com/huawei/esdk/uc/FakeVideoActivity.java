@@ -22,8 +22,6 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -65,6 +63,7 @@ public class FakeVideoActivity extends Activity{
     private TimerTask task = null;
 
     private ImageView warn1, warn2, warn3;
+    private ImageView emotion;
 
     private RequestQueue requestQueue;
 
@@ -78,7 +77,7 @@ public class FakeVideoActivity extends Activity{
                 animation.cancel();
 
             animation = ObjectAnimator.ofInt(seekBar, "progress", seekBar.getProgress() + msg.what);
-            animation.setDuration(500); // 0.5 second
+            animation.setDuration(6000); // 6 second
             animation.setInterpolator(new LinearInterpolator());
             animation.start();
             seekBar.setTag(animation);
@@ -93,8 +92,8 @@ public class FakeVideoActivity extends Activity{
             Log.e(tag, "take picture");
             if (view == null) {
                 view = LayoutInflater.from(FakeVideoActivity.this).inflate(R.layout.images, null, false);
-                int[] ids = {R.id.img1, R.id.img2, R.id.img3, R.id.img4, R.id.img5};
-                for (int i = 0; i < 5; i++) {
+                int[] ids = {R.id.img1, R.id.img2, R.id.img3};
+                for (int i = 0; i < 3; i++) {
                     images[i] = (ImageView) view.findViewById(ids[i]);
                 }
             }
@@ -109,7 +108,7 @@ public class FakeVideoActivity extends Activity{
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             images[count++].setImageBitmap(bitmap);
 
-            if(count == 5) {
+            if(count == 3) {
                 view.measure(
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
@@ -119,8 +118,8 @@ public class FakeVideoActivity extends Activity{
 
                 count = 0;
                 view = LayoutInflater.from(FakeVideoActivity.this).inflate(R.layout.images, null, false);
-                int[] ids = {R.id.img1, R.id.img2, R.id.img3, R.id.img4, R.id.img5};
-                for (int i = 0; i < 5; i++) {
+                int[] ids = {R.id.img1, R.id.img2, R.id.img3};
+                for (int i = 0; i < 3; i++) {
                     images[i] = (ImageView) view.findViewById(ids[i]);
                 }
 
@@ -149,7 +148,7 @@ public class FakeVideoActivity extends Activity{
                                     result = new JSONArray(response);
                                     double anger, happiness;
                                     int score = 0;
-                                    for (int i = 0; i < 5 && i < result.length(); i++) {
+                                    for (int i = 0; i < 3 && i < result.length(); i++) {
                                         JSONObject scores = result.optJSONObject(i).optJSONObject("scores");
                                         anger = scores.optDouble("anger");
                                         happiness = scores.optDouble("happiness");
@@ -227,10 +226,14 @@ public class FakeVideoActivity extends Activity{
                     image.start();
             }
         });
+        image.setZOrderOnTop(true);
 
         findViewById(R.id.interact).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                stopTimer();
+                myCamera.stopPreview();
+                myCamera.release();
                 Intent in = new Intent(FakeVideoActivity.this, InteractVideoActivity.class);
                 startActivity(in);
                 finish();
@@ -246,14 +249,8 @@ public class FakeVideoActivity extends Activity{
         warn1 = (ImageView)findViewById(R.id.img1);
         warn2 = (ImageView)findViewById(R.id.img2);
         warn3 = (ImageView)findViewById(R.id.img3);
-        AlphaAnimation alphaAnimation1 = new AlphaAnimation(0.1f, 1.0f);
-        alphaAnimation1.setDuration(200);
-        alphaAnimation1.setRepeatCount(Animation.INFINITE);
-        alphaAnimation1.setRepeatMode(Animation.REVERSE);
-        warn1.setAnimation(alphaAnimation1);
-        warn2.setAnimation(alphaAnimation1);
-        warn3.setAnimation(alphaAnimation1);
-        alphaAnimation1.start();
+        emotion = (ImageView)findViewById(R.id.emotion);
+        emotion.setImageResource(R.drawable.happy);
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -270,6 +267,15 @@ public class FakeVideoActivity extends Activity{
                     warn1.setVisibility(View.INVISIBLE);
                 else
                     warn1.setVisibility(View.VISIBLE);
+
+                if (progress > 7500)
+                    emotion.setImageResource(R.drawable.angry);
+                else if (progress > 5000)
+                    emotion.setImageResource(R.drawable.unhappy);
+                else if (progress > 2500)
+                    emotion.setImageResource(R.drawable.happy);
+                else
+                    emotion.setImageResource(R.drawable.smile);
             }
 
             @Override
@@ -384,13 +390,5 @@ public class FakeVideoActivity extends Activity{
                 myCamera = null;
             }
         }
-    }
-
-    @Override
-    public void onBackPressed()
-    //无意中按返回键时要释放内存
-    {
-        super.onBackPressed();
-        FakeVideoActivity.this.finish();
     }
 }
