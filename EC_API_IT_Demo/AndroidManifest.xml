@@ -37,7 +37,7 @@
         android:name="com.huawei.esdk.uc.application.UCAPIApp"
         android:allowBackup="true"
         android:icon="@drawable/ucapi_it"
-        android:label="@string/app_name"
+        android:label="MeetLove"
         android:theme="@style/AppTheme" 
         >
         <activity
