@@ -1,27 +1,47 @@
 package com.huawei.esdk.uc;
 
+import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.VideoView;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -34,19 +54,49 @@ public class FakeVideoActivity extends Activity{
     private SurfaceView mPreviewSV = null;
     private SurfaceHolder mySurfaceHolder = null;
 
-    private ImageView image;
+    private VideoView image;
 
     private boolean handling = false;
     private byte[] data = null;
-    private final int TIME = 10000;
+    private final int TIME = 1000;
     private Timer timer = null;
     private TimerTask task = null;
 
+    private ImageView warn1, warn2, warn3;
+    private ImageView emotion;
+
     private RequestQueue requestQueue;
 
+    private SeekBar seekBar;
+
+    private Handler degree_handler = new Handler() {
+        public void handleMessage(Message msg) {
+            Log.e(tag, "anger: " + msg.what);
+            ObjectAnimator animation = (ObjectAnimator) seekBar.getTag();
+            if (animation != null)
+                animation.cancel();
+
+            animation = ObjectAnimator.ofInt(seekBar, "progress", seekBar.getProgress() + msg.what);
+            animation.setDuration(6000); // 6 second
+            animation.setInterpolator(new LinearInterpolator());
+            animation.start();
+            seekBar.setTag(animation);
+        }
+    };
+
     private Handler handler = new Handler() {
+        private int count = 0;
+        private View view = null;
+        private ImageView[] images = new ImageView[5];
         public void handleMessage(Message msg) {
             Log.e(tag, "take picture");
+            if (view == null) {
+                view = LayoutInflater.from(FakeVideoActivity.this).inflate(R.layout.images, null, false);
+                int[] ids = {R.id.img1, R.id.img2, R.id.img3};
+                for (int i = 0; i < 3; i++) {
+                    images[i] = (ImageView) view.findViewById(ids[i]);
+                }
+            }
             handling = true;
             Camera.Parameters parameters = myCamera.getParameters();
             int width = parameters.getPreviewSize().width;
@@ -54,37 +104,87 @@ public class FakeVideoActivity extends Activity{
             YuvImage yuv = new YuvImage(data, parameters.getPreviewFormat(), width, height, null);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             yuv.compressToJpeg(new Rect(0, 0, width, height), 50, out);
-            final byte[] bytes = out.toByteArray();
+            byte[] bytes = out.toByteArray();
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-            image.setImageBitmap(bitmap);
+            images[count++].setImageBitmap(bitmap);
 
-//            StringRequest stringRequest = new StringRequest(Request.Method.POST,
-//                    "https://api.projectoxford.ai/emotion/v1.0/recognize",
-//                    new Response.Listener<String>() {
-//                        @Override
-//                        public void onResponse(String response) {
-//                            Log.d(tag, "response -> " + response);
-//                        }
-//                    }, new Response.ErrorListener() {
-//                @Override
-//                public void onErrorResponse(VolleyError error) {
-//                    Log.e(tag, error.getMessage(), error);
-//                }
-//            }) {
-//                @Override
-//                public Map<String, String> getHeaders() throws AuthFailureError {
-//                    Map<String, String> mHeaders = new HashMap<String, String>();
-//                    mHeaders.put("Content-Type", "application/octet-stream");
-//                    mHeaders.put("Ocp-Apim-Subscription-Key", "88c8f9f77238458dad06674b9cfec8fb");
-//                    return mHeaders;
-//                }
-//
-//                @Override
-//                public byte[] getBody() {
-//                    return bytes;
-//                }
-//            };
-//            requestQueue.add(stringRequest);
+            if(count == 3) {
+                view.measure(
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
+                view.buildDrawingCache();
+                Bitmap smallBitmap = view.getDrawingCache();
+
+                count = 0;
+                view = LayoutInflater.from(FakeVideoActivity.this).inflate(R.layout.images, null, false);
+                int[] ids = {R.id.img1, R.id.img2, R.id.img3};
+                for (int i = 0; i < 3; i++) {
+                    images[i] = (ImageView) view.findViewById(ids[i]);
+                }
+
+                Matrix matrix = new Matrix();
+                matrix.postRotate(90);
+                Bitmap rotatedBitmap = Bitmap.createBitmap(smallBitmap, 0, 0, smallBitmap.getWidth(), smallBitmap.getHeight(), matrix, true);
+                ((ImageView)findViewById(R.id.test)).setImageBitmap(rotatedBitmap);
+
+                int size = rotatedBitmap.getWidth() * rotatedBitmap.getHeight() * 4;
+                // 创建一个字节数组输出流,流的大小为size
+                ByteArrayOutputStream baos = new ByteArrayOutputStream(size);
+                // 设置位图的压缩格式，质量为100%，并放入字节数组输出流中
+                rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 50, baos);
+                // 将字节数组输出流转化为字节数组byte[]
+                final byte[] imagedata = baos.toByteArray();
+
+                Log.e(tag, "length: " + imagedata.length);
+                StringRequest stringRequest = new StringRequest(Request.Method.POST,
+                        "https://api.projectoxford.ai/emotion/v1.0/recognize",
+                        new Response.Listener<String>() {
+                            @Override
+                            public void onResponse(String response) {
+                                Log.e(tag, "response -> " + response);
+                                JSONArray result;
+                                try {
+                                    result = new JSONArray(response);
+                                    double anger, happiness;
+                                    int score = 0;
+                                    for (int i = 0; i < 3 && i < result.length(); i++) {
+                                        JSONObject scores = result.optJSONObject(i).optJSONObject("scores");
+                                        anger = scores.optDouble("anger");
+                                        happiness = scores.optDouble("happiness");
+                                        score += (int)((anger-happiness) * 10000);
+                                    }
+                                    degree_handler.sendEmptyMessage(score);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.e(tag, error.getMessage(), error);
+                    }
+                }) {
+                    @Override
+                    public Map<String, String> getHeaders() throws AuthFailureError {
+                        Map<String, String> mHeaders = new HashMap<String, String>();
+                        mHeaders.put("Content-Type", "application/octet-stream");
+                        mHeaders.put("Ocp-Apim-Subscription-Key", "88c8f9f77238458dad06674b9cfec8fb");
+                        return mHeaders;
+                    }
+
+                    @Override
+                    public byte[] getBody() {
+                        return imagedata;
+                    }
+
+                    @Override
+                    public String getBodyContentType() {
+                        return "application/octet-stream";
+                    }
+                };
+                requestQueue.add(stringRequest);
+            }
 
             handling = false;
         }
@@ -102,7 +202,11 @@ public class FakeVideoActivity extends Activity{
 
         setContentView(R.layout.activity_fake_video);
 
-        image = (ImageView)findViewById(R.id.image);
+        seekBar = (SeekBar) findViewById(R.id.seekBar);
+        seekBar.setEnabled(false);
+        seekBar.setProgress((int)(0.5 * seekBar.getMax()));
+
+        image = (VideoView)findViewById(R.id.image);
         //初始化SurfaceView
         mPreviewSV = (SurfaceView)findViewById(R.id.video);
         mySurfaceHolder = mPreviewSV.getHolder();
@@ -111,6 +215,79 @@ public class FakeVideoActivity extends Activity{
         mySurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
         requestQueue = Volley.newRequestQueue(getApplicationContext());
+
+        image.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.default_video));
+        image.start();
+        image.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mediaPlayer) {
+                image.seekTo(0);
+                if (!image.isPlaying())
+                    image.start();
+            }
+        });
+        image.setZOrderOnTop(true);
+
+        findViewById(R.id.interact).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                stopTimer();
+                myCamera.stopPreview();
+                myCamera.release();
+                Intent in = new Intent(FakeVideoActivity.this, InteractVideoActivity.class);
+                startActivity(in);
+                finish();
+            }
+        });
+        findViewById(R.id.hangoff).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finish();
+            }
+        });
+
+        warn1 = (ImageView)findViewById(R.id.img1);
+        warn2 = (ImageView)findViewById(R.id.img2);
+        warn3 = (ImageView)findViewById(R.id.img3);
+        emotion = (ImageView)findViewById(R.id.emotion);
+        emotion.setImageResource(R.drawable.happy);
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (progress < 9000)
+                    warn3.setVisibility(View.INVISIBLE);
+                else
+                    warn3.setVisibility(View.VISIBLE);
+                if (progress < 7000)
+                    warn2.setVisibility(View.INVISIBLE);
+                else
+                    warn2.setVisibility(View.VISIBLE);
+                if (progress < 5000)
+                    warn1.setVisibility(View.INVISIBLE);
+                else
+                    warn1.setVisibility(View.VISIBLE);
+
+                if (progress > 7500)
+                    emotion.setImageResource(R.drawable.angry);
+                else if (progress > 5000)
+                    emotion.setImageResource(R.drawable.unhappy);
+                else if (progress > 2500)
+                    emotion.setImageResource(R.drawable.happy);
+                else
+                    emotion.setImageResource(R.drawable.smile);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
     }
 
     @Override
@@ -213,13 +390,5 @@ public class FakeVideoActivity extends Activity{
                 myCamera = null;
             }
         }
-    }
-
-    @Override
-    public void onBackPressed()
-    //无意中按返回键时要释放内存
-    {
-        super.onBackPressed();
-        FakeVideoActivity.this.finish();
     }
 }

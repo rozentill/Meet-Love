@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     
-    <string name="app_name">eSdk EC API(IT)</string>
+    <string name="app_name">MeetLove</string>
     <string name="androidversion">V2.5.0</string>
     
     <string name="hw_copy_right">Copyright © Huawei Technologies Co., Ltd. 1998-2014. All rights reserved.</string>

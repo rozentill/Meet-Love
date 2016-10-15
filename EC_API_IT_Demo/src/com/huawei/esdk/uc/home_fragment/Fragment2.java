@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.huawei.esdk.uc.FakeVideoActivity;
 import com.huawei.esdk.uc.MainActivityOld;
 import com.huawei.esdk.uc.R;
 
@@ -27,7 +28,8 @@ public class Fragment2 extends Fragment{
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                Intent i = new Intent(getActivity(), FakeVideoActivity.class);
+                startActivity(i);
             }
         });
         btn.setOnLongClickListener(new View.OnLongClickListener() {
