@@ -16,7 +16,7 @@ dependencies {
     compile 'com.android.support:multidex:1.0.1'
     compile 'de.greenrobot:eventbus:2.4.0'
     compile project(':openCVLibrary310')
-    compile 'com.microsoft.projectoxford:face:1.0.0'
+//    compile 'com.microsoft.projectoxford:face:1.0.0'
 
 }
 
