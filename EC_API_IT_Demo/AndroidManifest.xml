@@ -193,7 +193,11 @@
             android:screenOrientation="portrait" >
         </activity>
 
-        <service android:name=".MyService" />
+        <activity
+            android:name=".InteractVideoActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait" >
+        </activity>
 
         <service android:name="com.huawei.service.EspaceService" />
         <service android:name="com.huawei.esdk.uc.UCAPIService" />

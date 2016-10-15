@@ -38,7 +38,7 @@ public class FakeVideoActivity extends Activity{
 
     private boolean handling = false;
     private byte[] data = null;
-    private final int TIME = 1000;
+    private final int TIME = 10000;
     private Timer timer = null;
     private TimerTask task = null;
 
@@ -54,12 +54,12 @@ public class FakeVideoActivity extends Activity{
             YuvImage yuv = new YuvImage(data, parameters.getPreviewFormat(), width, height, null);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             yuv.compressToJpeg(new Rect(0, 0, width, height), 50, out);
-            byte[] bytes = out.toByteArray();
+            final byte[] bytes = out.toByteArray();
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             image.setImageBitmap(bitmap);
-//
+
 //            StringRequest stringRequest = new StringRequest(Request.Method.POST,
-//                    "http://api.projectoxford.ai/emotion/v1.0/recognize",
+//                    "https://api.projectoxford.ai/emotion/v1.0/recognize",
 //                    new Response.Listener<String>() {
 //                        @Override
 //                        public void onResponse(String response) {
@@ -117,19 +117,13 @@ public class FakeVideoActivity extends Activity{
     protected void onStart() {
         super.onStart();
         restartTimer();
-//        EventBus.getDefault().register(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         stopTimer();
-//        EventBus.getDefault().unregister(this);
     }
-
-//    public void onEventMainThread(PunchEvent event) {
-//
-//    }
 
     private void stopTimer() {
         if (timer != null) {

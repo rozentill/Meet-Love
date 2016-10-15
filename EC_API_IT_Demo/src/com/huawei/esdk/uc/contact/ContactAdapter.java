@@ -18,12 +18,11 @@ import com.huawei.contacts.PersonalContact;
 import com.huawei.data.ExecuteResult;
 import com.huawei.data.PersonalTeam;
 import com.huawei.esdk.uc.FakeVideoActivity;
-import com.huawei.esdk.uc.IntentData;
+import com.huawei.esdk.uc.InteractVideoActivity;
 import com.huawei.esdk.uc.R;
 import com.huawei.esdk.uc.application.UCAPIApp;
 import com.huawei.esdk.uc.function.ContactFunc;
 import com.huawei.esdk.uc.headphoto.ContactHeadFetcher;
-import com.huawei.esdk.uc.im.ChatActivity;
 import com.huawei.esdk.uc.utils.UnreadMessageManager;
 import com.huawei.service.ServiceProxy;
 
@@ -148,9 +147,11 @@ public class ContactAdapter extends BaseAdapter
                     @Override
                     public void onClick(View v)
                     {
-                        Intent intent = new Intent(context, ChatActivity.class);
-                        intent.putExtra(IntentData.ESPACENUMBER, contact);
-                        context.startActivity(intent);
+//                        Intent intent = new Intent(context, ChatActivity.class);
+//                        intent.putExtra(IntentData.ESPACENUMBER, contact);
+//                        context.startActivity(intent);
+                        Intent in = new Intent(context.getApplicationContext(), InteractVideoActivity.class);
+                        context.startActivity(in);
                     }
                 });
                 
