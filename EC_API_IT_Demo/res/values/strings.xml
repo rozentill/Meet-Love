@@ -11,7 +11,7 @@
     <string name="btn_create">Create</string>
     <string name="btn_done">Finish</string>
     <string name="btn_sure">OK</string>
-    <string name="save_account">save</string>
+    <string name="save_account">Remember</string>
     <string name="account">Account</string>
     <string name="password">Password</string>
     <string name="login">Login</string>

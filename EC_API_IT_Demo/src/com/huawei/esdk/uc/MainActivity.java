@@ -1,775 +1,152 @@
 package com.huawei.esdk.uc;
 
-import com.huawei.common.CommonVariables;
-import com.huawei.common.constant.CustomBroadcastConst;
-import com.huawei.common.constant.UCResource;
-import com.huawei.common.res.LocContext;
-import com.huawei.contacts.ContactClientStatus;
-import com.huawei.contacts.ContactLogic;
-import com.huawei.contacts.PersonalContact;
-import com.huawei.device.DeviceManager;
-import com.huawei.esdk.uc.application.UCAPIApp;
-import com.huawei.esdk.uc.conf.ConfCreateActivity;
-import com.huawei.esdk.uc.conf.ConfListView;
-import com.huawei.esdk.uc.contact.ContactView;
-import com.huawei.esdk.uc.contact.SearchContactView;
-import com.huawei.esdk.uc.function.ConferenceFunc;
-import com.huawei.esdk.uc.function.ContactFunc;
-import com.huawei.esdk.uc.function.ImFunc;
-import com.huawei.esdk.uc.function.LoginFunc;
-import com.huawei.esdk.uc.function.VoipFunc;
-import com.huawei.esdk.uc.group.GroupListView;
-import com.huawei.esdk.uc.group.GroupMemberAddActivity;
-import com.huawei.esdk.uc.headphoto.ContactHeadFetcher;
-import com.huawei.esdk.uc.headphoto.HeadPhotoUtil;
-import com.huawei.esdk.uc.recent.RecentChatView;
-import com.huawei.esdk.uc.self.SelfInfoUtil;
-import com.huawei.esdk.uc.utils.NotifyUpdateUi;
-import com.huawei.esdk.uc.widget.SlippingViewGroup;
-import com.huawei.http.HttpCloudHandler;
-
-import android.app.Dialog;
-import android.app.NotificationManager;
-import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentTabHost;
+import android.support.v4.view.ViewPager;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.animation.Animation;
-import android.view.animation.Animation.AnimationListener;
-import android.view.animation.AnimationUtils;
-import android.widget.Button;
+import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout.LayoutParams;
-import android.widget.PopupWindow;
-import android.widget.RadioGroup;
-import android.widget.RadioGroup.OnCheckedChangeListener;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.TabHost;
+import android.widget.TabWidget;
 
-public class MainActivity extends BaseActivity implements OnClickListener
-{
+import com.huawei.esdk.uc.home_fragment.Fragment1;
+import com.huawei.esdk.uc.home_fragment.Fragment2;
+import com.huawei.esdk.uc.home_fragment.Fragment3;
 
-    private static final String TAG = MainActivity.class.getSimpleName();
+import java.util.ArrayList;
+import java.util.List;
 
-    private ImageView ivSelfHead;
 
-    private ImageView ivStatus;
+public class MainActivity extends FragmentActivity implements
+        ViewPager.OnPageChangeListener, TabHost.OnTabChangeListener {
 
-    private TextView tvUserName;
-
-    private ImageView ivSearch;
-
-    private ImageView ivCreate;
-
-    private ImageView ivSetting;
-
-    private SlippingViewGroup viewGroup;
-
-    private ContactView contactView;
-
-    private SearchContactView searchContactView;
-
-    private GroupListView groupListView;
-
-    private RecentChatView recentChatView;
-
-    private ConfListView confListView;
-
-    private PopupWindow popupWindow;
-
-    private PopupWindow createPopupWindow;
-
-    private RadioGroup rgStatus;
-
-    private TextView tvLogout;
-
-    private Dialog exitDialog;
-
-    private ProgressDialog progressDialog;
-
-    private IntentFilter filter;
-
-    private int status;
-
-    private boolean currIsSearch = false;
-
-    private Animation animationDownGONE;
-
-    private Animation animationDownVISIBLE;
-
-    private Animation animationUpGONE;
-
-    private Animation animationUpVISIBLE;
-    
-    private Context mContext;
-    
-    private ContactHeadFetcher headFetcher;
-
-    private NotifyUpdateUi views[];
-
-    /**同步所有联系人*/
-    public static int ASY_ALL = 2;
-
-    /**为了加载离线未读消息后刷新ui by wx303895*/
-    private Handler handler = new Handler(){
-        @Override
-        public void handleMessage(Message msg)
-        {
-            super.handleMessage(msg);
-            switch (msg.what)
-            {
-                case ImFunc.UNREAD_MSG_OFFLINE:
-
-                    for(NotifyUpdateUi view : views)
-                    {
-                        if(view != null)
-                        {
-                            view.notifyUpdate();
-                        }
-                    }
-
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
+    private FragmentTabHost mTabHost;
+    private LayoutInflater layoutInflater;
+    private Class fragmentArray[] = { Fragment1.class, Fragment2.class, Fragment3.class };
+    private int imageViewArray[] = { R.drawable.tab_setting_btn, R.drawable.tab_home_btn, R.drawable.tab_contact_btn};
+    private String textViewArray[] = {"setting", "home", "contact"};
+    private List<Fragment> list = new ArrayList<Fragment>();
+    private ViewPager vp;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        mContext = this;
-
-        initView();
-
-        initAnimation();
-
-        getUserPhotoHead();
-
-        filter = new IntentFilter();
-        filter.addAction(CustomBroadcastConst.ACTION_LOGINOUT_SUCCESS);
-        filter.addAction(CustomBroadcastConst.ACTION_SET_STATUS_RESPONSE);
-        filter.addAction(CustomBroadcastConst.UPDATE_CONTACT_VIEW);
-        //filter.addAction(CustomBroadcastConst.ACTION_SEARCE_CONTACT_RESPONSE);
-        filter.addAction(CustomBroadcastConst.ACTION_CONNECT_TO_SERVER);
-        
-        
-//        filter.addAction(ACTION.ACTION_GROUP_UPDATE);
-//        filter.addAction(ACTION.ACTION_LEAVE_GROUP);
-        
-        
-//        filter.addAction(CustomBroadcastConst.ACTION_CREATE_GROUP);
-//        filter.addAction(CustomBroadcastConst.ACTION_GET_GROUP_PIC);
-//        filter.addAction(CustomBroadcastConst.ACTION_GROUPSEND_QUERYMEMBER);
-//        filter.addAction(CustomBroadcastConst.ACTION_LEAVE_GROUP);
-//        filter.addAction(CustomBroadcastConst.ACTION_GROUP_CHANGE);
-//        filter.addAction(CustomBroadcastConst.ACTION_GROUPSEND_CHAT);
-//        filter.addAction(CustomBroadcastConst.ACTION_FIX_GROUP);
-//        filter.addAction(CustomBroadcastConst.ACTION_MODIFY_GROUP);
-//        filter.addAction(CustomBroadcastConst.ACTION_INVITETO_JOIN_GROUP);
-//        filter.addAction(CustomBroadcastConst.ACTION_GROUPNOTIFY_MEMBERCHANGE);
-//        filter.addAction(CustomBroadcastConst.ACTION_GROUPNOTIFY_GROUPDELTE);
-        
-        
-        registerRec();
-
-        ContactFunc.getIns().loadContact(ASY_ALL);
-
-        ImFunc.getIns().setViewHandler(handler);
+        setContentView(R.layout.activity_main_new);
+        initView();//初始化控件
+        initPage();//初始化页面
     }
 
-    private void initView()
-    {
-        ivSelfHead = (ImageView) findViewById(R.id.self_head);
-        ivStatus = (ImageView) findViewById(R.id.cur_status);
-        tvUserName = (TextView) findViewById(R.id.username);
-        ivSearch = (ImageView) findViewById(R.id.search_img);
-        ivCreate = (ImageView) findViewById(R.id.create_img);
-        ivSetting = (ImageView) findViewById(R.id.setting_img);
+    //    控件初始化控件
+    private void initView() {
+        vp = (ViewPager) findViewById(R.id.pager);
 
-        //滑动视图
-        viewGroup = (SlippingViewGroup) findViewById(R.id.slippingGroup);
-        
-        //联系人
-        contactView = new ContactView(this);
-        viewGroup.addView(contactView);
-        
-        //头像加载
-        headFetcher = new ContactHeadFetcher(MainActivity.this);
+        /*实现OnPageChangeListener接口,目的是监听Tab选项卡的变化，然后通知ViewPager适配器切换界面*/
+        /*简单来说,是为了让ViewPager滑动的时候能够带着底部菜单联动*/
 
-        searchContactView = (SearchContactView) findViewById(R.id.search_view);
-        searchContactView.setVisibility(View.GONE);
+        vp.addOnPageChangeListener(this);//设置页面切换时的监听器
+        layoutInflater = LayoutInflater.from(this);//加载布局管理器
 
-        //讨论组
-        if (ContactLogic.getIns().getAbility().isDiscussGroupAbility())
-        {
-            ivCreate.setVisibility(View.VISIBLE);
-            groupListView = new GroupListView(this);
-            viewGroup.addView(groupListView);
-        }
-        else
-        {
-            ivCreate.setVisibility(View.GONE);
+        /*实例化FragmentTabHost对象并进行绑定*/
+        mTabHost = (FragmentTabHost) findViewById(android.R.id.tabhost);//绑定tahost
+        mTabHost.setup(this, getSupportFragmentManager(), R.id.pager);//绑定viewpager
+
+        /*实现setOnTabChangedListener接口,目的是为监听界面切换），然后实现TabHost里面图片文字的选中状态切换*/
+        /*简单来说,是为了当点击下面菜单时,上面的ViewPager能滑动到对应的Fragment*/
+        mTabHost.setOnTabChangedListener(this);
+
+        int count = imageViewArray.length;
+
+        /*新建Tabspec选项卡并设置Tab菜单栏的内容和绑定对应的Fragment*/
+        for (int i = 0; i < count; i++) {
+            // 给每个Tab按钮设置标签、图标和文字
+            TabHost.TabSpec tabSpec = mTabHost.newTabSpec(textViewArray[i])
+                    .setIndicator(getTabItemView(i));
+            // 将Tab按钮添加进Tab选项卡中，并绑定Fragment
+            mTabHost.addTab(tabSpec, fragmentArray[i], null);
+            mTabHost.setTag(i);
         }
 
-        //对话
-        recentChatView = new RecentChatView(this);
-        viewGroup.addView(recentChatView);
-
-        views = new NotifyUpdateUi[]{ recentChatView , contactView };
-
-        //会议
-        confListView = new ConfListView(this);
-        viewGroup.addView(confListView);
-
-        ivSelfHead.setOnClickListener(this);
-        ivSearch.setOnClickListener(this);
-        ivCreate.setOnClickListener(this);
-        ivSetting.setOnClickListener(this);
-        
-        tvUserName.setText(ContactFunc.getIns().getDisplayName(
-                ContactFunc.getIns().getMySelf()));
-
-        setUserStatus();
+//        mTabHost.getTabWidget().getChildAt(0)
+//                .setBackgroundResource(R.drawable.tab_btn_selector_0);//设置Tab被选中的时候颜色改变
+//        mTabHost.getTabWidget().getChildAt(1)
+//                .setBackgroundResource(R.drawable.tab_btn_selector_1);//设置Tab被选中的时候颜色改变
+//        mTabHost.getTabWidget().getChildAt(2)
+//                .setBackgroundResource(R.drawable.tab_btn_selector_2);//设置Tab被选中的时候颜色改变
     }
 
-    private AnimationListener animationListener = new AnimationListener()
-    {
-        @Override
-        public void onAnimationStart(Animation animation)
-        {
-        }
+    /*初始化Fragment*/
+    private void initPage() {
+        Fragment1 fragment1 = new Fragment1();
+        Fragment2 fragment2 = new Fragment2();
+        Fragment3 fragment3 = new Fragment3();
 
-        @Override
-        public void onAnimationRepeat(Animation animation)
-        {
-        }
+        list.add(fragment1);
+        list.add(fragment2);
+        list.add(fragment3);
 
-        @Override
-        public void onAnimationEnd(Animation animation)
-        {
-            searchContactView.setVisibility(currIsSearch ? View.VISIBLE
-                    : View.GONE);
-            viewGroup.setVisibility(!currIsSearch ? View.VISIBLE : View.GONE);
-        }
-    };
-
-    private void initAnimation()
-    {
-        animationDownGONE = AnimationUtils.loadAnimation(this,
-                R.anim.translate_down_gone);
-        animationDownGONE.setAnimationListener(animationListener);
-
-        animationDownVISIBLE = AnimationUtils.loadAnimation(this,
-                R.anim.translate_down_visible);
-        animationDownVISIBLE.setAnimationListener(animationListener);
-
-        animationUpGONE = AnimationUtils.loadAnimation(this,
-                R.anim.translate_up_gone);
-        animationUpGONE.setAnimationListener(animationListener);
-
-        animationUpVISIBLE = AnimationUtils.loadAnimation(this,
-                R.anim.translate_up_visible);
-        animationUpVISIBLE.setAnimationListener(animationListener);
+        //绑定Fragment适配器
+        vp.setAdapter(new MyFragmentAdapter(getSupportFragmentManager(), list));
+        vp.setCurrentItem(1);
+        mTabHost.getTabWidget().setDividerDrawable(null);
     }
 
-    /**
-     * 每次登陆, 获取自己的头像
-     */
-    private void getUserPhotoHead()
-    {
-    	//头像加载换成以下方法
-//        HeadPhotoUtil.getInstance().loadSelfHeadPhoto(ivSelfHead);
-    	headFetcher.loadHead(CommonVariables.getIns().getUserAccount(), ivSelfHead,false);
+    private View getTabItemView(int i) {
+        View view;
+        if(i==1){
+            view = layoutInflater.inflate(R.layout.activity_tabbtn_2, null);
+        }
+        else {
+            view = layoutInflater.inflate(R.layout.activity_tabbtn_1, null);
+        }
 
-    }
-
-    private void setUserStatus()
-    {
-        PersonalContact myContact = ContactFunc.getIns().getMySelf();
-        int staut = myContact.getStatus(false);
-        switch (staut)
-        {
-            case ContactClientStatus.ON_LINE:
-
-                status = R.id.online;
-                ivStatus.setImageResource(R.drawable.recent_online_small);
+        //将xml布局转换为view对象
+        //利用view对象，找到布局中的组件,并设置内容，然后返回视图
+        ImageView mImageView = (ImageView) view
+                .findViewById(R.id.tab_imageview);
+//        mImageView.setImageResource(imageViewArray[i]);
+        switch (i){
+            case(0):
+                mImageView.setImageResource(R.drawable.tab_btn_selector_0);
                 break;
-
-            case ContactClientStatus.BUSY:
-
-                status = R.id.busy;
-                ivStatus.setImageResource(R.drawable.recent_busy_small);
+            case(1):
+                mImageView.setImageResource(R.drawable.tab_btn_selector_1);
                 break;
-
-            case ContactClientStatus.XA:
-
-                status = R.id.away;
-                ivStatus.setImageResource(R.drawable.recent_away_small);
-                break;
-
-            case ContactClientStatus.AWAY:
-
-                status = 0;
-                ivStatus.setImageResource(R.drawable.recent_offline_small);
-                break;
-
-            default:
-                status = 0;
-                ivStatus.setImageResource(R.drawable.recent_offline_small);
+            case(2):
+                mImageView.setImageResource(R.drawable.tab_btn_selector_2);
                 break;
         }
+        return view;
     }
 
-    private void showStatusPopup(View anchor)
-    {
-        if (null == popupWindow)
-        {
-            View view = getLayoutInflater()
-                    .inflate(R.layout.popup_status, null);
 
-            rgStatus = (RadioGroup) view.findViewById(R.id.group_status);
-            tvLogout = (TextView) view.findViewById(R.id.logout);
+    @Override
+    public void onPageScrollStateChanged(int arg0) {
 
-            rgStatus.setOnCheckedChangeListener(new OnCheckedChangeListener()
-            {
-                @Override
-                public void onCheckedChanged(RadioGroup group, int checkedId)
-                {
-                    switch (checkedId)
-                    {
-                        case R.id.online:
-                            SelfInfoUtil.getIns().setStatus(
-                            		ContactClientStatus.ON_LINE);
-                            break;
-                        case R.id.busy:
-                            SelfInfoUtil.getIns().setStatus(
-                            		ContactClientStatus.BUSY);
-                            break;
-                        case R.id.away:
-                            SelfInfoUtil.getIns().setStatus(ContactClientStatus.XA);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            });
+    }//arg0 ==1的时候表示正在滑动，arg0==2的时候表示滑动完毕了，arg0==0的时候表示什么都没做，就是停在那。
 
-            tvLogout.setOnClickListener(new OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    showExitDialog();
-                    popupWindow.dismiss();
-                }
-            });
+    @Override
+    public void onPageScrolled(int arg0, float arg1, int arg2) {
 
-            popupWindow = new PopupWindow(view, LayoutParams.WRAP_CONTENT,
-                    LayoutParams.WRAP_CONTENT);
-            popupWindow.setOutsideTouchable(true);
-            popupWindow.setBackgroundDrawable(getResources().getDrawable(
-                    R.drawable.bg_dialog));
-        }
+    }//表示在前一个页面滑动到后一个页面的时候，在前一个页面滑动前调用的方法
 
-        if (!popupWindow.isShowing())
-        {
-            rgStatus.check(status);
-            popupWindow.showAsDropDown(anchor);
-        }
-    }
+    @Override
+    public void onPageSelected(int arg0) {//arg0是表示你当前选中的页面位置Postion，这事件是在你页面跳转完毕的时候调用的。
+        TabWidget widget = mTabHost.getTabWidget();
+        int oldFocusability = widget.getDescendantFocusability();
+        widget.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);//设置View覆盖子类控件而直接获得焦点
+        mTabHost.setCurrentTab(arg0);//根据位置Postion设置当前的Tab
+        widget.setDescendantFocusability(oldFocusability);//设置取消分割线
 
-    private void showCreatePopup(View anchor)
-    {
-        if (null == createPopupWindow)
-        {
-            View view = getLayoutInflater()
-                    .inflate(R.layout.create_popup, null);
-            TextView createConf = (TextView) view
-                    .findViewById(R.id.create_conf);
-            TextView createDiscuss = (TextView) view
-                    .findViewById(R.id.create_discuss);
-
-            createConf.setOnClickListener(new OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    toCreateConf();
-                    createPopupWindow.dismiss();
-                }
-            });
-
-            createDiscuss.setOnClickListener(new OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    toCreateDiscussGroup();
-                    createPopupWindow.dismiss();
-                }
-            });
-
-            createPopupWindow = new PopupWindow(view,
-                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            createPopupWindow.setOutsideTouchable(true);
-        }
-
-        if (!createPopupWindow.isShowing())
-        {
-            createPopupWindow.setBackgroundDrawable(getResources().getDrawable(
-                    R.drawable.bg_dialog));
-            createPopupWindow.showAsDropDown(anchor);
-        }
-    }
-
-    private void toCreateConf()
-    {
-        Intent intent = new Intent(MainActivity.this, ConfCreateActivity.class);
-        startActivity(intent);
-    }
-
-    private void toCreateDiscussGroup()
-    {
-        Intent intent = new Intent(MainActivity.this,
-                GroupMemberAddActivity.class);
-        startActivity(intent);
-    }
-
-    private void showExitDialog()
-    {
-        if (exitDialog == null)
-        {
-            exitDialog = new Dialog(this, R.style.Theme_dialog);
-            exitDialog.setContentView(R.layout.dialog_common);
-
-            ((TextView) exitDialog.findViewById(R.id.dialog_message))
-                    .setText(R.string.suretologout);
-            exitDialog.setCanceledOnTouchOutside(true);
-
-            ((Button) exitDialog.findViewById(R.id.dialog_leftbutton))
-                    .setOnClickListener(new View.OnClickListener()
-                    {
-                        @Override
-                        public void onClick(View v)
-                        {
-                            if (exitDialog.isShowing())
-                            {
-                                exitDialog.dismiss();
-                            }
-                        }
-                    });
-
-            ((Button) exitDialog.findViewById(R.id.dialog_rightbutton))
-                    .setOnClickListener(new View.OnClickListener()
-                    {
-                        @Override
-                        public void onClick(View v)
-                        {
-                            if (LoginFunc.getIns().isLogin())
-                            {
-                                exitDialog.dismiss();
-//                                new Handler().postDelayed(new Runnable()
-//                                {
-//                                    @Override
-//                                    public void run()
-//                                    {
-//                                        closeDialog();
-//
-//                                        LoginFunc.getIns().setLogin(false);
-//                                        SelfInfoUtil.getIns()
-//                                                .setToLogoutStatus();
-//                                        UCAPIApp.getApp().getService().logout(false);
-//                                        UCAPIApp.getApp().stopImService(true);
-//
-//                                        if (ContactLogic.getIns().getAbility().isAllUmAbility())
-//                                        {
-//                                            HttpCloudHandler.ins().clear();
-//                                        }
-//
-//                                        UCAPIApp.getApp().popAllExcept(null);
-//
-//                                        DeviceManager.killProcess();
-//                                    }
-//                                }, 5 * 1000);
-
-                                ApplicationHandler.getIns().exitOrLogout();
-
-                                if (LoginFunc.getIns().logout())
-                                {
-                                    showProgerssDlg();
-                                    return;
-                                }
-                            }
-                            LoginFunc.getIns().setLogin(false);
-                            SelfInfoUtil.getIns().setToLogoutStatus();
-                            UCAPIApp.getApp().stopImService(true);
-                            UCAPIApp.getApp().popAllExcept(null);
-
-                            DeviceManager.killProcess();
-                        }
-                    });
-        }
-
-        exitDialog.show();
-    }
-
-    /**
-     * 等待对话框
-     */
-    private void showProgerssDlg()
-    {
-        if (null == progressDialog)
-        {
-            progressDialog = new ProgressDialog(this);
-            progressDialog.setMessage("正在登出，请稍后······");
-            progressDialog.setCanceledOnTouchOutside(false);
-        }
-        progressDialog.show();
-    }
-
-    private void closeDialog()
-    {
-        if (null != progressDialog && progressDialog.isShowing())
-        {
-            progressDialog.dismiss();
-        }
     }
 
     @Override
-    public void onClick(View v)
-    {
-        switch (v.getId())
-        {
-            case R.id.self_head:
-
-                showStatusPopup(v);
-
-                break;
-            case R.id.search_img:
-
-                currIsSearch = !currIsSearch;
-                int res = currIsSearch ? R.drawable.search_light
-                        : R.drawable.search;
-                ivSearch.setImageResource(res);
-
-                if (currIsSearch)
-                {
-                    searchContactView.startAnimation(animationDownVISIBLE);
-                    viewGroup.startAnimation(animationDownGONE);
-                }
-                else
-                {
-                    searchContactView.startAnimation(animationUpGONE);
-                    viewGroup.startAnimation(animationUpVISIBLE);
-                }
-
-                break;
-            case R.id.create_img:
-            {
-                showCreatePopup(v);
-            }
-                break;
-            case R.id.setting_img:
-            {
-                Intent intent = new Intent(MainActivity.this, SetActivity.class);
-                startActivity(intent);
-            }
-                break;
-
-            default:
-                break;
-        }
+    public void onTabChanged(String tabId) {//Tab改变的时候调用
+        int position = mTabHost.getCurrentTab();
+        vp.setCurrentItem(position);//把选中的Tab的位置赋给适配器，让它控制页面切换
     }
-
-    private void registerRec()
-    {
-//        registerReceiver(receiver, filter);
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(receiver, filter);
-    }
-
-    private void unRegisterRec()
-    {
-//        unregisterReceiver(receiver);
-        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(receiver);
-    }
-
-    private BroadcastReceiver receiver = new BroadcastReceiver()
-    {
-        @Override
-        public void onReceive(Context context, Intent intent)
-        {
-            String action = intent.getAction();
-
-            Log.d(CommonUtil.APPTAG, TAG + " | action = " + action);
-
-            if (CustomBroadcastConst.ACTION_LOGINOUT_SUCCESS.equals(action))
-            {
-                closeDialog();
-
-                int result = intent.getIntExtra(
-                        UCResource.SERVICE_RESPONSE_RESULT, 0);
-                Log.d(CommonUtil.APPTAG, TAG
-                        + " | ACTION_LOGINOUT_SUCCESS | result = " + result);
-                if (UCResource.REQUEST_OK == result)
-                {
-                    LoginFunc.getIns().setLogin(false);
-                    SelfInfoUtil.getIns().setToLogoutStatus();
-                    UCAPIApp.getApp().stopImService(true);
-                    UCAPIApp.getApp().popAllExcept(null);
-
-                    DeviceManager.killProcess();
-                }
-                else
-                {
-                    Toast.makeText(MainActivity.this, "登出失败", Toast.LENGTH_SHORT).show();
-                }
-            }
-            else if (CustomBroadcastConst.ACTION_SET_STATUS_RESPONSE
-                    .equals(action))
-            {
-                Log.d(CommonUtil.APPTAG, TAG + " | ACTION_SET_STATUS_RESPONSE ");
-                SelfInfoUtil.getIns().onStatusRespProc(intent);
-                setUserStatus();
-            }
-            else if (CustomBroadcastConst.UPDATE_CONTACT_VIEW.equals(action))
-            {
-                Log.d(CommonUtil.APPTAG, TAG + " | UPDATE_CONTACT_VIEW ");
-
-                contactView.updateContactsList();
-
-                if (groupListView != null)
-                {
-                    groupListView.updateGroups();
-                }
-
-                recentChatView.updateRecentChat();
-            }
-//            else if (CustomBroadcastConst.ACTION_SEARCE_CONTACT_RESPONSE
-//                    .equals(action))
-//            {
-//                Log.d(CommonUtil.APPTAG, TAG
-//                        + " | ACTION_SEARCE_CONTACT_RESPONSE ");
-//
-//                searchContactView.updateSearchContactList(intent);
-//            }
-            
-            else if(CustomBroadcastConst.ACTION_CONNECT_TO_SERVER
-                    .equals(action))
-            {
-            	 Log.d(CommonUtil.APPTAG, TAG
-                         + " | ACTION_CONNECT_TO_SERVER ");
-            	 
-            	 boolean connectStatus = intent.getBooleanExtra(UCResource.SERVICE_RESPONSE_DATA,
-                         false);
-            	 Log.d(CommonUtil.APPTAG, TAG
-                         + " | ACTION_CONNECT_TO_SERVER " + connectStatus);
-            }
-//            else if (ACTION.ACTION_GROUP_UPDATE.equals(action))
-//            {
-//                Log.d(CommonUtil.APPTAG, TAG + " | ACTION_GROUP_UPDATE ");
-//
-//                if (groupListView != null)
-//                {
-//                    groupListView.updateGroups();
-//                }
-//            }
-//            else if (ACTION.ACTION_LEAVE_GROUP.equals(action))
-//            {
-//                Log.d(CommonUtil.APPTAG, TAG + " | ACTION_LEAVE_GROUP ");
-//
-//                if (groupListView != null)
-//                {
-//                    groupListView.updateGroups();
-//                }
-//            }
-        }
-    };
-
-    @Override
-    public void onBackPressed()
-    {
-        showExitDialog();
-    }
-
-    @Override
-    protected void onResume()
-    {
-        super.onResume();
-
-        Log.d(CommonUtil.APPTAG, TAG + " | onResume");
-
-        if (contactView != null)
-        {
-            contactView.updateContactsList();
-        }
-        if (groupListView != null)
-        {
-            groupListView.updateGroups();
-        }
-        if (searchContactView != null)
-        {
-            searchContactView.updateContacts();
-        }
-        if (recentChatView != null)
-        {
-            recentChatView.updateRecentChat();
-        }
-
-        ConferenceFunc.getIns().requestConferenceList();
-
-        UCAPIApp.getApp().popAllExcept(this);
-    }
-
-    @Override
-    protected void onDestroy()
-    {
-        unRegisterRec();
-        /**强杀进程后销毁服务 by wx303895 start*/
-        cancelAllNotification();
-        UCAPIApp.getApp().stopImService();
-        /**end*/
-        Log.d(CommonUtil.APPTAG, TAG + " | kill process");
-        Log.i("********************","kill kill");
-        super.onDestroy();
-
-    }
-
-    /**
-     * 清除所有通知
-     */
-    private void cancelAllNotification()
-    {
-        Context context = LocContext.getContext();
-        ((NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE)).cancelAll();
-    }
-
-	@Override
-	public void initializeData() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void initializeComposition() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void clearData() {
-		// TODO Auto-generated method stub
-		
-	}
 
 }
+

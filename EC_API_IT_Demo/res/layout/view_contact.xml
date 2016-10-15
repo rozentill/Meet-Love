@@ -10,7 +10,7 @@
         android:layout_height="25dp"
         android:background="@drawable/conference_title"
         android:gravity="center_vertical"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/title"

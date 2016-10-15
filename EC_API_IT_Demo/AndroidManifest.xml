@@ -62,7 +62,12 @@
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:launchMode="singleTask"
             android:screenOrientation="portrait" >
-        </activity>
+        </activity><activity
+        android:name="com.huawei.esdk.uc.MainActivityOld"
+        android:configChanges="keyboardHidden|orientation|screenSize"
+        android:launchMode="singleTask"
+        android:screenOrientation="portrait" >
+    </activity>
         <activity
             android:name="com.huawei.esdk.uc.SetActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
