@@ -1,14 +1,13 @@
 
 package com.huawei.esdk.uc;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.util.Log;
 
-
-
-import com.microsoft.projectoxford.face.*;
-import com.microsoft.projectoxford.face.contract.*;
+import com.microsoft.projectoxford.face.FaceServiceClient;
+import com.microsoft.projectoxford.face.FaceServiceRestClient;
+import com.microsoft.projectoxford.face.contract.Face;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,9 +21,9 @@ public class Expression {
     private Face targetFace;
 
     private FaceServiceClient faceServiceClient =
-            new FaceServiceRestClient("88c8f9f77238458dad06674b9cfec8fb");
+            new FaceServiceRestClient("8ea54153bfca452290ecaec326e2b420");
 
-    private interface MyCallBack {
+    public interface MyCallBack {
         void onFaceDetected();
     }
 
@@ -39,6 +38,7 @@ public class Expression {
                     @Override
                     protected Face[] doInBackground(InputStream... params) {
                         try {
+                            Log.e("expression", "Detecting");
                             publishProgress("Detecting...");
                             Face[] result = faceServiceClient.detect(
                                     params[0],
@@ -49,15 +49,19 @@ public class Expression {
                             targetFace = result[0];
                             if (result == null)
                             {
+                                Log.e("expression", "Detection Finished. Nothing detected");
                                 publishProgress("Detection Finished. Nothing detected");
                                 return null;
                             }
+                            Log.e("expression", String.format("Detection Finished. %d face(s) detected",
+                                    result.length));
                             publishProgress(
                                     String.format("Detection Finished. %d face(s) detected",
                                             result.length));
                             myCallBack.onFaceDetected();
                             return result;
                         } catch (Exception e) {
+                            Log.e("expression", "Detecting failed | " + e.getMessage());
                             publishProgress("Detection failed");
                             return null;
                         }
@@ -94,9 +98,17 @@ public class Expression {
 
     public double[] getLeftEye(){
         double[] leftEye = new double[2];
-        leftEye[0] = targetFace.faceLandmarks.eyebrowLeftInner.x;
-        leftEye[1] = targetFace.faceLandmarks.eyebrowLeftInner.y;
+        leftEye[0] = targetFace.faceRectangle.left + targetFace.faceRectangle.width / 4;
+        leftEye[1] = targetFace.faceRectangle.top + targetFace.faceRectangle.height / 4;
         return leftEye;
+    }
+
+    public double getEyeDis() {
+        return targetFace.faceLandmarks.eyebrowRightInner.x - targetFace.faceLandmarks.eyebrowLeftInner.x;
+    }
+
+    public double getWidth() {
+        return targetFace.faceRectangle.width;
     }
 
     public void setExpression(double[] src, double[] dst, Bitmap bitmap){// src 1 :(352,560)px ;dst 1

@@ -11,14 +11,19 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-
-import android.widget.VideoView;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.widget.ImageView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -36,7 +41,7 @@ public class InteractVideoActivity extends Activity{
     private SurfaceView surface = null;
     private SurfaceHolder mySurfaceHolder = null;
 
-
+    private ImageView emotion;
     private VideoView video;
     private Gesture gesture;
     private Expression expression;
@@ -60,14 +65,14 @@ public class InteractVideoActivity extends Activity{
     };
 
     //For create video thumbnail
-    private Bitmap createVideoThumbnail(String filePath) {
+    private Bitmap createVideoThumbnail() {
         Bitmap bitmap = null;
         android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
         try {// MODE_CAPTURE_FRAME_ONLY
 //          retriever
 //                  .setMode(android.media.MediaMetadataRetriever.MODE_CAPTURE_FRAME_ONLY);
 //          retriever.setMode(MediaMetadataRetriever.MODE_CAPTURE_FRAME_ONLY);
-            retriever.setDataSource(filePath);
+            retriever.setDataSource(this, Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.default_video));
 //          bitmap = retriever.captureFrame();
             String timeString = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
             long time = Long.parseLong(timeString) * 1000;
@@ -109,6 +114,7 @@ public class InteractVideoActivity extends Activity{
         mySurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         surface.setZOrderOnTop(true);
 
+        emotion = (ImageView)findViewById(R.id.emotion);
 
         video.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.default_video));
         video.start();
@@ -122,8 +128,14 @@ public class InteractVideoActivity extends Activity{
         });
 
         //Init gesture detection
+        expression = new Expression();
 
-
+        findViewById(R.id.hangoff).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finish();
+            }
+        });
     }
 
     private class myCallBack implements SurfaceHolder.Callback {
@@ -204,26 +216,70 @@ public class InteractVideoActivity extends Activity{
         }
     }
 
+    private Handler handler = new Handler() {
+        public void handleMessage(Message msg) {
+//            double width = expression.getWidth();
+//            Bitmap bitmap = ((BitmapDrawable)getResources().getDrawable(R.drawable.faint)).getBitmap();
+//            double height = width * bitmap.getHeight() / bitmap.getWidth();
+//            emotion.setImageResource(R.drawable.faint);
+//            RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) emotion.getLayoutParams();
+//            lp.width = (int) width;
+//            lp.height = (int) height;
+//            double[] target = expression.getLeftEye();
+//            double[] src = {352, 560};
+//            lp.setMargins((int)(target[0] - src[0]), (int)(target[1] - src[1]), 0, 0);
+//            emotion.setLayoutParams(lp);
+            emotion.setVisibility(View.VISIBLE);
+            postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    AlphaAnimation alphaAnim = new AlphaAnimation(1.0f, 0.0f);
+                    alphaAnim.setDuration(1000);
+                    alphaAnim.setAnimationListener(new Animation.AnimationListener() {
+                        @Override
+                        public void onAnimationStart(Animation animation) {
+
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animation animation) {
+                            emotion.setVisibility(View.GONE);
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animation animation) {
+
+                        }
+                    });
+                    emotion.startAnimation(alphaAnim);
+                }
+            }, 1000);
+        }
+    };
+
     public interface ActionListener {
         void onPunch();
     }
     public ActionListener listener = new ActionListener() {
+        private boolean lock = false;
         @Override
         public void onPunch() {
             // todo do something when punched
-            Toast.makeText(InteractVideoActivity.this, "punched!", Toast.LENGTH_SHORT);
-//            expression.detectFace(createVideoThumbnail());
-//            expression.setExpression(,expression.getNose(),);
+            if (lock)
+                return;
+
+            lock = true;
+            Toast.makeText(InteractVideoActivity.this, "punched!", Toast.LENGTH_SHORT).show();
+            expression.detectFace(createVideoThumbnail(),
+                    new Expression.MyCallBack() {
+                        @Override
+                        public void onFaceDetected() {
+                            handler.sendEmptyMessage(0);
+                            lock = false;
+                        }
+                    });
         }
     };
-
-    @Override
-    public void onBackPressed()
-    //无意中按返回键时要释放内存
-    {
-        super.onBackPressed();
-        InteractVideoActivity.this.finish();
-    }
 
     @Override
     public void onResume()

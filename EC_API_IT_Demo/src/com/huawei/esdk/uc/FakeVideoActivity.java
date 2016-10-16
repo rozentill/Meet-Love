@@ -97,6 +97,8 @@ public class FakeVideoActivity extends Activity{
                     images[i] = (ImageView) view.findViewById(ids[i]);
                 }
             }
+            if (data == null)
+                return;
             handling = true;
             Camera.Parameters parameters = myCamera.getParameters();
             int width = parameters.getPreviewSize().width;
@@ -126,7 +128,6 @@ public class FakeVideoActivity extends Activity{
                 Matrix matrix = new Matrix();
                 matrix.postRotate(90);
                 Bitmap rotatedBitmap = Bitmap.createBitmap(smallBitmap, 0, 0, smallBitmap.getWidth(), smallBitmap.getHeight(), matrix, true);
-                ((ImageView)findViewById(R.id.test)).setImageBitmap(rotatedBitmap);
 
                 int size = rotatedBitmap.getWidth() * rotatedBitmap.getHeight() * 4;
                 // 创建一个字节数组输出流,流的大小为size
@@ -232,8 +233,10 @@ public class FakeVideoActivity extends Activity{
             @Override
             public void onClick(View view) {
                 stopTimer();
+                myCamera.setPreviewCallback(null);
                 myCamera.stopPreview();
                 myCamera.release();
+                myCamera = null;
                 Intent in = new Intent(FakeVideoActivity.this, InteractVideoActivity.class);
                 startActivity(in);
                 finish();
