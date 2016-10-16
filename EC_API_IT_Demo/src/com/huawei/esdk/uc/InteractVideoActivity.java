@@ -7,6 +7,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -38,7 +39,9 @@ public class InteractVideoActivity extends Activity{
 
     private VideoView video;
     private Gesture gesture;
+    private Expression expression;
 
+    //For loading opencv library
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -55,6 +58,34 @@ public class InteractVideoActivity extends Activity{
             }
         }
     };
+
+    //For create video thumbnail
+    private Bitmap createVideoThumbnail(String filePath) {
+        Bitmap bitmap = null;
+        android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
+        try {// MODE_CAPTURE_FRAME_ONLY
+//          retriever
+//                  .setMode(android.media.MediaMetadataRetriever.MODE_CAPTURE_FRAME_ONLY);
+//          retriever.setMode(MediaMetadataRetriever.MODE_CAPTURE_FRAME_ONLY);
+            retriever.setDataSource(filePath);
+//          bitmap = retriever.captureFrame();
+            String timeString = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            long time = Long.parseLong(timeString) * 1000;
+            Log.i("TAG","time = " + time);
+            bitmap = retriever.getFrameAtTime(time*31/160); //按视频长度比例选择帧
+        } catch (IllegalArgumentException ex) {
+            // Assume this is a corrupt video file
+        } catch (RuntimeException ex) {
+            // Assume this is a corrupt video file.
+        } finally {
+            try {
+                retriever.release();
+            } catch (RuntimeException ex) {
+                // Ignore failures while cleaning up.
+            }
+        }
+        return bitmap;
+    }
 
 
     @Override
@@ -181,6 +212,8 @@ public class InteractVideoActivity extends Activity{
         public void onPunch() {
             // todo do something when punched
             Toast.makeText(InteractVideoActivity.this, "punched!", Toast.LENGTH_SHORT);
+//            expression.detectFace(createVideoThumbnail());
+//            expression.setExpression(,expression.getNose(),);
         }
     };
 
