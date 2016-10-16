@@ -34,18 +34,16 @@
         android:layout_alignBottom="@+id/emotion"
         android:layout_toRightOf="@+id/emotion"
         android:layout_toLeftOf="@+id/linearLayout"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
         android:gravity="top">
 
 
         <ImageView
             android:layout_width="match_parent"
-            android:layout_height="5dp"
+            android:layout_height="match_parent"
             android:id="@+id/imageView"
-            android:background="@drawable/seekbar"
-            android:layout_marginLeft="2dp"
-            android:layout_marginRight="2dp" />
+            android:background="@drawable/seekbar" />
 
         <SeekBar
             android:layout_width="match_parent"
@@ -62,7 +60,10 @@
             android:paddingTop="1px"
             android:paddingLeft="0dp"
             android:paddingRight="0dp"
-            android:paddingBottom="0dp" />
+            android:paddingBottom="0dp"
+            android:layout_marginLeft="12dp"
+            android:layout_marginRight="12dp"
+            android:layout_marginTop="5dp" />
 
     </RelativeLayout>
 

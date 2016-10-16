@@ -18,15 +18,14 @@
         android:layout_alignParentEnd="true" />
 
     <ImageView
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
         android:id="@+id/emotion"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="false"
         android:src="@drawable/faint"
-        android:visibility="gone"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="100dp" />
+        android:visibility="visible"
+        android:layout_marginLeft="20dp" />
 
     <ImageView
         android:layout_width="50dp"

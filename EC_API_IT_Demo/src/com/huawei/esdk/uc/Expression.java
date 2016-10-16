@@ -98,8 +98,8 @@ public class Expression {
 
     public double[] getLeftEye(){
         double[] leftEye = new double[2];
-        leftEye[0] = targetFace.faceRectangle.left + targetFace.faceRectangle.width / 4;
-        leftEye[1] = targetFace.faceRectangle.top + targetFace.faceRectangle.height / 4;
+        leftEye[0] = targetFace.faceRectangle.left + targetFace.faceRectangle.width / 3;
+        leftEye[1] = targetFace.faceRectangle.top + targetFace.faceRectangle.height *3/ 5;
         return leftEye;
     }
 

@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
+import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Camera;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
@@ -22,6 +23,7 @@ import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -218,17 +220,17 @@ public class InteractVideoActivity extends Activity{
 
     private Handler handler = new Handler() {
         public void handleMessage(Message msg) {
-//            double width = expression.getWidth();
-//            Bitmap bitmap = ((BitmapDrawable)getResources().getDrawable(R.drawable.faint)).getBitmap();
-//            double height = width * bitmap.getHeight() / bitmap.getWidth();
-//            emotion.setImageResource(R.drawable.faint);
-//            RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) emotion.getLayoutParams();
-//            lp.width = (int) width;
-//            lp.height = (int) height;
-//            double[] target = expression.getLeftEye();
-//            double[] src = {352, 560};
-//            lp.setMargins((int)(target[0] - src[0]), (int)(target[1] - src[1]), 0, 0);
-//            emotion.setLayoutParams(lp);
+            double width = expression.getWidth();
+            Bitmap bitmap = ((BitmapDrawable)getResources().getDrawable(R.drawable.faint)).getBitmap();
+            double height = width * bitmap.getHeight() / bitmap.getWidth();
+            emotion.setImageResource(R.drawable.faint);
+            RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) emotion.getLayoutParams();
+            lp.width = (int) width;
+            lp.height = (int) height;
+            double[] target = expression.getLeftEye();
+            double[] src = {352, 560};
+            lp.setMargins((int)(target[0] - src[0]), (int)(target[1] - src[1]), 0, 0);
+            emotion.setLayoutParams(lp);
             emotion.setVisibility(View.VISIBLE);
             postDelayed(new Runnable() {
                 @Override
